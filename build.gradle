@@ -1,0 +1,39 @@
+plugins {
+    id 'java'
+    // 중요: Spring Boot 3.0부터는 Java 17이 필수입니다.
+    // Java 8을 쓰려면 2.x 대 마지막 버전인 2.7.18을 써야 합니다.
+    id 'org.springframework.boot' version '2.7.18'
+    id 'io.spring.dependency-management' version '1.1.7'
+}
+
+group = 'com.datastreams.hbase'
+version = '0.0.1-SNAPSHOT'
+description = 'Demo project for Spring Boot'
+
+java {
+    toolchain {
+        // Java 8로 설정
+        languageVersion = JavaLanguageVersion.of(8)
+    }
+}
+
+repositories {
+	mavenCentral()
+}
+
+dependencies {
+    implementation 'org.springframework.boot:spring-boot-starter'
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+    // lombok
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+
+    // hbase
+    implementation 'org.apache.hbase:hbase-client:2.2.6'
+}
+
+tasks.named('test') {
+	useJUnitPlatform()
+}
