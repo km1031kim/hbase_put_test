@@ -3,11 +3,11 @@ package com.datastreams.hbase.hbaseputter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.hadoop.hbase.TableName;
-import org.apache.hadoop.hbase.client.BufferedMutator;
-import org.apache.hadoop.hbase.client.BufferedMutatorParams;
-import org.apache.hadoop.hbase.client.Connection;
+import org.apache.hadoop.hbase.client.*;
+import org.apache.hadoop.hbase.util.Bytes;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.Resource;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.util.FileCopyUtils;
 
@@ -16,8 +16,8 @@ import java.io.IOException;
 import java.io.InputStream;
 
 @Component
-@Slf4j
 @RequiredArgsConstructor
+@Slf4j
 public class HbaseImagePutter {
 
     private final Connection connection;
@@ -31,10 +31,13 @@ public class HbaseImagePutter {
     @Value("${hbase.table.cf}")
     private String cf;
 
+    @Value("${hbase.table.columnName}")
+    private String column;
+
     private byte[] cachedImageBytes;
 
     @PostConstruct
-    public void init() {
+    public void init() throws IOException {
         // 스트림 열어서 바이트 배열로 변환
         try (InputStream is = imageResource.getInputStream()) {
             log.info("이미지 로딩 시작.");
@@ -43,17 +46,40 @@ public class HbaseImagePutter {
         } catch (IOException e) {
             throw new RuntimeException("이미지 로딩 실패", e);
         }
+        checkTableExists();
     }
 
+    public void checkTableExists() throws IOException {
+        try (Admin admin = connection.getAdmin()) {
+            TableName tableName = TableName.valueOf(tableNameStr);
+            if (!admin.tableExists(tableName)) {
+                log.info("테이블이 존재하지 않습니다. 테이블 생성. ");
+
+                ColumnFamilyDescriptor cfDescriptor = ColumnFamilyDescriptorBuilder.newBuilder(cf.getBytes()).build();
+                TableDescriptor tableDescriptor = TableDescriptorBuilder.newBuilder(tableName).setColumnFamily(cfDescriptor).build();
+                admin.createTable(tableDescriptor);
+                log.info("테이블 생성 완료.");
+            }
+        }
+    }
+
+    @Scheduled(fixedDelay = 1000)
     public void upload() {
         if (cachedImageBytes == null) return;
 
-        TableName tableName = TableName.valueOf(this.tableNameStr);
+        TableName tableName = TableName.valueOf(tableNameStr);
+        BufferedMutatorParams params = new BufferedMutatorParams(tableName).writeBufferSize(1024 * 1024 * 12);
 
-        // 버퍼 설정
-        BufferedMutatorParams params = new BufferedMutatorParams(tableName).writeBufferSize(1024 * 1024 * 10);
+        try (BufferedMutator mutator = connection.getBufferedMutator(params)) {
+            String rowKey = "kjg_" + String.valueOf(System.currentTimeMillis());
+            Put put = new Put(Bytes.toBytes(rowKey));
+            put.addColumn(cf.getBytes(), column.getBytes(), cachedImageBytes);
+
+            mutator.mutate(put);
+            log.info("전송 완료");
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        log.info("전송 완료");
     }
-
-
-
 }

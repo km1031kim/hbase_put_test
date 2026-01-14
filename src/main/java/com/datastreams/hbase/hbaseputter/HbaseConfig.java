@@ -15,10 +15,22 @@ public class HbaseConfig {
     @Value("${hbase.zookeeper.quorum}")
     private String quorum;
 
+    @Value("${hbase.zookeeper.znode}")
+    private String znode;
+
     @Bean(destroyMethod = "close")
-    public Connection hbaseConnection() throws IOException {
+    public Connection hbaseConnection() {
+
         org.apache.hadoop.conf.Configuration config = HBaseConfiguration.create();
         config.set("hbase.zookeeper.quorum", quorum);
-        return ConnectionFactory.createConnection(config);
+        config.set("zookeeper.znode.parent", znode);
+        // config.set("hbase.rootdir", "/apps/hbase/data");
+
+
+        try {
+            return ConnectionFactory.createConnection(config);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
     }
 }
