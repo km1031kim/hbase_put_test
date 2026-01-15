@@ -4,7 +4,7 @@ spring:
 
 hbase:
   zookeeper:
-    quorum: "dsdmma1.datastreams.co.kr:2181,dsdmma2.datastreams.co.kr:2181,dsdmma3.datastreams.co.kr:2181"
+    quorum: "bdmaster1.kodit.co.kr:2181,bdmaster2.kodit.co.kr:2181,bdmaster3.kodit.co.kr:2181"
     znode: "/hbase-unsecure"
   table:
     name: "kjg_test_table"

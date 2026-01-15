@@ -1,7 +1,5 @@
 plugins {
     id 'java'
-    // 중요: Spring Boot 3.0부터는 Java 17이 필수입니다.
-    // Java 8을 쓰려면 2.x 대 마지막 버전인 2.7.18을 써야 합니다.
     id 'org.springframework.boot' version '2.7.18'
     id 'io.spring.dependency-management' version '1.1.7'
 }
